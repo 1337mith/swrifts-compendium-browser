@@ -1,0 +1,53 @@
+name: Release FoundryVTT Module
+
+on:
+  push:
+    tags:
+      - 'v*' # Matches version tags like v1.0.0
+
+jobs:
+  release:
+    name: Version and Release Module
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Version from Tag
+        id: extract_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update module.json with tag version
+        run: |
+          jq --arg v "${{ steps.extract_version.outputs.VERSION }}" \
+            '.version = $v |
+             .manifest = "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v\($v)/module.json" |
+             .download = "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v\($v)/module.zip" |
+             .packageUrl = "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v\($v)/module.json"' \
+            module.json > temp.json && mv temp.json module.json
+
+      - name: Commit updated module.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add module.json
+          git commit -m "chore: update module.json for v${{ steps.extract_version.outputs.VERSION }}"
+          git push origin HEAD:main
+
+      - name: Zip module
+        run: |
+          mkdir -p build
+          zip -r build/module.zip . -x '*.git*' '*node_modules*' '*.DS_Store*' '*.zip' '.github/*'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.extract_version.outputs.VERSION }}
+          name: Release v${{ steps.extract_version.outputs.VERSION }}
+          body: |
+            Auto-generated release for v${{ steps.extract_version.outputs.VERSION }}.
+          files: build/module.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
