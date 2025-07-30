@@ -1,13 +1,44 @@
 {
   "id": "swrifts-compendium-browser",
-  "title": "swrifts-compendium-browser",
+  "title": "Savage Rifts - Compendium Browser",
+  "description": "A Savage Rifts compendium browser module with modular layout and FoundryVTT v13 compatibility.",
   "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Toph Luhk",
+      "email": "mithrandir055@hotmail.com",
+      "url": "https://www.linkedin.com/in/daniel-sullivan-7416497/",
+      "discord": "melkoriluvatar"
+    }
+  ],
   "compatibility": {
     "minimum": "13",
     "verified": "13"
   },
-  "flags": {
-    "canUpload": true
+  "esmodules": [
+    "scripts/module.js"
+  ],
+  "styles": [
+    "styles/compendium-browser.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "swade",
+        "type": "system"
+      }
+    ]
   },
-  "description": ""
+  "packs": [],
+  "templates": [
+    "templates"
+  ],
+  "bugs": "https://github.com/1337mith/swrifts-compendium-browser/issues"
 }
