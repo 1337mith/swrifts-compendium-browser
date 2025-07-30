@@ -1,0 +1,12 @@
+# Ignore build output and dependencies
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+
+# OS / IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
