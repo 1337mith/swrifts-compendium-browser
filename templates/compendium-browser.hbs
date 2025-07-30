@@ -1,0 +1,62 @@
+<div class="swrifts-compendium-browser">
+
+  <!-- Top Navigation Tabs -->
+  <nav class="browser-tabs">
+    {{#each typeOptions}}
+      <button class="type-tab {{#ifEquals ../activeType value}}active{{/ifEquals}}" data-type="{{value}}">
+        {{label}}
+      </button>
+    {{/each}}
+  </nav>
+
+  <!-- Main Content Area (Left Filters + Right Results) -->
+  <div class="browser-body">
+
+    <!-- Sidebar: Search, Sort, Filters -->
+    <aside class="browser-sidebar">
+      <div class="search-group">
+        <label for="search">Search</label>
+        <input type="text" class="browser-search" placeholder="Search by name, tags, or description" value="{{searchValue}}" />
+      </div>
+
+      <div class="sort-group">
+        <label for="sort">Sort By</label>
+        <select class="browser-sort">
+          <option value="name" {{#ifEquals sortField "name"}}selected{{/ifEquals}}>Name</option>
+          <option value="source" {{#ifEquals sortField "source"}}selected{{/ifEquals}}>Source</option>
+          <!-- Add more sort fields as needed -->
+        </select>
+
+        <button class="sort-direction" title="Toggle Sort Direction">
+          {{#ifEquals sortDirection "asc"}}⬆️{{else}}⬇️{{/ifEquals}}
+        </button>
+      </div>
+
+      {{#if showFilters}}
+        <div class="filter-group">
+          <!-- Example tag filter -->
+          <label>Tags</label>
+          {{#each filters.tags}}
+            <label><input type="checkbox" name="tag-filter" value="{{this}}" /> {{this}}</label>
+          {{/each}}
+        </div>
+
+        <button class="clear-filters">Clear Filters</button>
+      {{/if}}
+
+    </aside>
+
+    <!-- Content Area: Entries Table -->
+    <section class="browser-results">
+
+      <!-- Scrollable container for infinite scroll -->
+      <div class="compendium-results-wrapper">
+        <div class="compendium-results">
+          {{> "compendium-results" entries=entries }}
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+</div>
