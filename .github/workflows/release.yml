@@ -9,40 +9,33 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Version and Release Module
+  zip-and-release:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract Version from Tag
-        id: extract_version
+      - name: Read version from module.json
+        id: get_version
         run: |
-          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          VERSION=$(jq -r '.version' module.json)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Update module.json with tag version
+      - name: Zip folder (except .git and .github)
         run: |
-          jq --arg v "${{ steps.extract_version.outputs.VERSION }}" \
-            '.version = $v |
-             .manifest = "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v\($v)/module.json" |
-             .download = "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v\($v)/module.zip" |
-             .packageUrl = "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v\($v)/module.json"' \
-            module.json > temp.json && mv temp.json module.json
+          zip -r module.zip . -x "*.git*" "*.github*"
 
-      - name: Zip module
-        run: |
-          mkdir -p build
-          zip -r build/module.zip . -x '*.git*' '*node_modules*' '*.DS_Store*' '*.zip' '.github/*'
-
-      - name: Create GitHub Release
+      - name: Create GitHub Release (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.extract_version.outputs.VERSION }}
-          name: Release v${{ steps.extract_version.outputs.VERSION }}
-          body: |
-            Auto-generated release for v${{ steps.extract_version.outputs.VERSION }}.
-          files: build/module.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: module.zip
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          body: "Automated release for version ${{ steps.get_version.outputs.version }}."
+
+      - name: Upload ZIP as an artifact (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: module
+          path: module.zip
