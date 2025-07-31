@@ -2,7 +2,7 @@
   "id": "swrifts-compendium-browser",
   "title": "Savage Rifts - Compendium Browser",
   "description": "<p>A Savage Rifts compendium browser module with modular layout and FoundryVTT v13 compatibility.</p>",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "authors": [
     {
       "name": "Toph Luhk",
