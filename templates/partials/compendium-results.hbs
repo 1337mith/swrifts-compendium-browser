@@ -1,8 +1,8 @@
 {{#if entries.length}}
   {{#each entries}}
     <div class="result-row" 
-         data-id="{{docId}}" 
-         data-uuid="{{pack}}.{{docId}}"
+         data-id="{{_id}}" 
+         data-uuid="{{uuid}}" 
          draggable="true">
 
       <img class="result-icon" src="{{img}}" alt="{{name}}" />
@@ -10,18 +10,17 @@
       <div class="result-content">
         <div class="result-header">
           <strong class="result-name">{{name}}</strong>
-          <span class="result-type">{{typeLabel}}</span>
+          <span class="result-type">{{capitalize type}}</span>
         </div>
-        
+
         <div class="result-meta">
-          <span class="result-source">{{source}}</span>
+          <span class="result-source">{{fallback system.source "Unknown Source"}}</span>
         </div>
 
         <div class="result-description">
-          {{previewDescription description}}
+          {{previewDescription system.description.value}}
         </div>
       </div>
-
     </div>
   {{/each}}
 {{else}}

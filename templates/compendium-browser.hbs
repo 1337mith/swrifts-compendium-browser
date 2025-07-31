@@ -3,7 +3,9 @@
   <!-- Top Navigation Tabs -->
   <nav class="browser-tabs">
     {{#each typeOptions}}
-      <button class="type-tab {{#ifEquals ../activeType value}}active{{/ifEquals}}" data-type="{{value}}">
+      <button 
+        class="type-tab {{#ifEquals ../activeTab value}}active{{/ifEquals}}" 
+        data-type="{{value}}">
         {{label}}
       </button>
     {{/each}}
@@ -16,7 +18,11 @@
     <aside class="browser-sidebar">
       <div class="search-group">
         <label for="search">Search</label>
-        <input type="text" class="browser-search" placeholder="Search by name, tags, or description" value="{{searchValue}}" />
+        <input 
+          type="text" 
+          class="browser-search" 
+          placeholder="Search by name, tags, or description" 
+          value="{{searchTerm}}" />
       </div>
 
       <div class="sort-group">
@@ -32,12 +38,13 @@
         </button>
       </div>
 
-      {{#if showFilters}}
+      {{#if filters.tags.length}}
         <div class="filter-group">
-          <!-- Example tag filter -->
           <label>Tags</label>
           {{#each filters.tags}}
-            <label><input type="checkbox" name="tag-filter" value="{{this}}" /> {{this}}</label>
+            <label>
+              <input type="checkbox" name="tag-filter" value="{{this}}" /> {{this}}
+            </label>
           {{/each}}
         </div>
 
@@ -49,6 +56,11 @@
     <!-- Content Area: Entries Table -->
     <section class="browser-results">
 
+      <!-- Status Summary -->
+      <div class="browser-status" style="margin: 0 0 10px 0; font-size: 0.9em; color: var(--color-text-light);">
+        Showing {{totalShown}} of {{totalLoaded}} entries
+      </div>
+
       <!-- Scrollable container for infinite scroll -->
       <div class="compendium-results-wrapper">
         <div class="compendium-results">
@@ -57,6 +69,5 @@
       </div>
 
     </section>
-
   </div>
 </div>
