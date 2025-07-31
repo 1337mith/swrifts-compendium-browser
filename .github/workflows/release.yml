@@ -1,9 +1,12 @@
-name: Release FoundryVTT Module
+name: Package and Release Module
 
 on:
   push:
-    tags:
-      - 'v*' # Matches version tags like v1.0.0
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
 
 jobs:
   release:
