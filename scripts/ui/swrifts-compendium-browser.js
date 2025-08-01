@@ -1,16 +1,18 @@
-export class SWRIFTSCompendiumBrowser extends foundry.applications.api.ApplicationV2 {
-  static DEFAULT_OPTIONS = {
-    ...super.DEFAULT_OPTIONS,
-    id: "swrifts-compendium-browser",
-    title: "SWRIFTS Compendium Browser",
-    template: "/modules/swrifts-compendium-browser/templates/compendium-browser.hbs",
-    width: 1000,
-    height: 700,
-    resizable: true,
-    classes: ["swrifts-compendium-browser"]
-  };
-
-  static _allItems = [];
+export class SWRIFTSCompendiumBrowser extends Application {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      id: "swrifts-compendium-browser",
+      title: "SWRIFTS Compendium Browser",
+      template: "/modules/swrifts-compendium-browser/templates/compendium-browser.hbs",
+      width: 1000,
+      height: 700,
+      top: 100,
+      left: 150,
+      resizable: true,
+      popOut: true,
+      classes: ["swrifts-compendium-browser"]
+    });
+  }
 
   constructor(options = {}) {
     super(options);
@@ -18,18 +20,19 @@ export class SWRIFTSCompendiumBrowser extends foundry.applications.api.Applicati
     this._searchTerm = "";
     this._sortField = "name";
     this._sortDirection = "asc";
-    this._filters = {};
+    this._filters = { tags: [], sources: [] };
     this._loadedPages = 1;
   }
 
-  async _prepareContext() {
-    if (!SWRIFTSCompendiumBrowser._allItems.length) {
+  async getData() {
+    if (!SWRIFTSCompendiumBrowser._allItems?.length) {
       SWRIFTSCompendiumBrowser._allItems = await this._loadAllGameItems();
     }
 
-    const entries = SWRIFTSCompendiumBrowser._allItems.filter(item => this._filterItemByTab(item, this._activeTab));
+    const entries = SWRIFTSCompendiumBrowser._allItems.filter(item =>
+      this._filterItemByTab(item, this._activeTab)
+    );
     const filteredEntries = this._applyFiltersAndSorting(entries);
-    const pagedEntries = filteredEntries.slice(0, this._loadedPages * 20);
 
     const typeOptions = [
       { value: "iconic-frameworks", label: "Iconic Frameworks" },
@@ -42,15 +45,41 @@ export class SWRIFTSCompendiumBrowser extends foundry.applications.api.Applicati
 
     return {
       activeTab: this._activeTab,
-      entries: pagedEntries,
+      entries: filteredEntries,
       filters: this._getAvailableFilters(entries),
       sortField: this._sortField,
       sortDirection: this._sortDirection,
       searchTerm: this._searchTerm,
       typeOptions,
       totalLoaded: entries.length,
-      totalShown: pagedEntries.length
+      totalShown: filteredEntries.length
     };
+  }
+
+  async updateResultsList() {
+    const entries = SWRIFTSCompendiumBrowser._allItems.filter(item => this._filterItemByTab(item, this._activeTab));
+    const filteredEntries = this._applyFiltersAndSorting(entries);
+
+    const context = {
+      entries: filteredEntries,
+      totalLoaded: entries.length,
+      totalShown: filteredEntries.length,
+      activeTab: this._activeTab
+    };
+
+    const html = await foundry.applications.handlebars.renderTemplate(
+      "/modules/swrifts-compendium-browser/templates/partials/compendium-results.hbs",
+      context
+    );
+
+    const resultsContainer = this.element.find(".compendium-results");
+    if (!resultsContainer.length) {
+      console.warn("⚠️ .compendium-results not found in DOM");
+      return;
+    }
+
+    resultsContainer.html(html);
+    this._bindResultEvents?.();
   }
 
   async _loadAllGameItems() {
@@ -64,8 +93,20 @@ export class SWRIFTSCompendiumBrowser extends foundry.applications.api.Applicati
     for (const pack of packs) {
       try {
         const items = await pack.getDocuments();
-        console.log(`📦 Loaded ${items.length} items from ${pack.metadata.packageName}.${pack.metadata.name}`);
-        allItems.push(...items);
+
+        const validItems = [];
+        for (const item of items) {
+          try {
+            // Access a required field to trigger validation
+            if (!item.name || typeof item.name !== "string") throw new Error("Missing or invalid name");
+            validItems.push(item);
+          } catch (validationError) {
+            console.warn(`❌ Skipped invalid item in ${pack.metadata.label}:`, item.name || "<unnamed>", validationError);
+          }
+        }
+
+        console.log(`📦 Loaded ${validItems.length}/${items.length} valid items from ${pack.metadata.packageName}.${pack.metadata.name}`);
+        allItems.push(...validItems);
       } catch (err) {
         console.warn(`⚠️ Failed to load ${pack.metadata.packageName}.${pack.metadata.name}:`, err);
       }
@@ -135,12 +176,11 @@ export class SWRIFTSCompendiumBrowser extends foundry.applications.api.Applicati
   }
 
   activateListeners(html) {
-    html.find(".type-tab").on("click", ev => {
+    html.find(".type-tab").on("click", async ev => {
       const tab = ev.currentTarget.dataset.type;
-      console.log("🔁 Switching to tab:", tab);
       this._activeTab = tab;
-      this._loadedPages = 1;
-      this.render();
+      console.log("🔁 Switching to tab:", tab);
+      await this.updateResultsList();
     });
 
     html.find(".browser-sort").on("change", ev => {

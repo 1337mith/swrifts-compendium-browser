@@ -25,8 +25,12 @@ Hooks.once("init", async () => {
   };
 });
 
-Hooks.once("ready", async () => {
-  await SWRIFTSCompendiumBrowser.preload();
+Hooks.once("ready", () => {
+  window.showCompendiumBrowser = (tab = "iconic-frameworks") => {
+    const app = new SWRIFTSCompendiumBrowser({ activeTab: tab });
+    app.render(true);
+  };
+
   // 🔍 Expose debug function globally for console use
   window.debugIconicFrameworks = () => SWRIFTSCompendiumBrowser.debugIconicFrameworks();
 });

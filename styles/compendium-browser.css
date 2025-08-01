@@ -1,3 +1,12 @@
+/* ========== WINDOW STRUCTURE ========== */
+.window-app.swrifts-compendium-browser {
+  position: absolute;
+  background: #1a1a1a;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
+  border: 1px solid #444;
+  overflow: hidden;
+}
+
 /* ========== LAYOUT STRUCTURE ========== */
 
 .swrifts-compendium-browser {
@@ -9,11 +18,13 @@
 
 .swrifts-compendium-browser .browser-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 6px;
   padding: 6px 10px;
   background-color: #2c2f36;
   border-bottom: 1px solid #444;
-  gap: 4px;
 }
 
 .swrifts-compendium-browser .browser-tabs .type-tab {
