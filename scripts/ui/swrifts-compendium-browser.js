@@ -29,10 +29,11 @@ export class SWRIFTSCompendiumBrowser extends Application {
       SWRIFTSCompendiumBrowser._allItems = await this._loadAllGameItems();
     }
 
-    const entries = SWRIFTSCompendiumBrowser._allItems.filter(item =>
+    const allTabEntries = SWRIFTSCompendiumBrowser._allItems.filter(item =>
       this._filterItemByTab(item, this._activeTab)
     );
-    const filteredEntries = this._applyFiltersAndSorting(entries);
+
+    const filteredEntries = this._applyFiltersAndSorting(allTabEntries);
 
     const typeOptions = [
       { value: "iconic-frameworks", label: "Iconic Frameworks" },
@@ -46,23 +47,25 @@ export class SWRIFTSCompendiumBrowser extends Application {
     return {
       activeTab: this._activeTab,
       entries: filteredEntries,
-      filters: this._getAvailableFilters(entries),
+      filters: this._getAvailableFilters(allTabEntries),
       sortField: this._sortField,
       sortDirection: this._sortDirection,
       searchTerm: this._searchTerm,
       typeOptions,
-      totalLoaded: entries.length,
+      totalLoaded: allTabEntries.length,
       totalShown: filteredEntries.length
     };
   }
 
   async updateResultsList() {
-    const entries = SWRIFTSCompendiumBrowser._allItems.filter(item => this._filterItemByTab(item, this._activeTab));
-    const filteredEntries = this._applyFiltersAndSorting(entries);
+    const allTabEntries = SWRIFTSCompendiumBrowser._allItems.filter(item =>
+      this._filterItemByTab(item, this._activeTab)
+    );
+    const filteredEntries = this._applyFiltersAndSorting(allTabEntries);
 
     const context = {
       entries: filteredEntries,
-      totalLoaded: entries.length,
+      totalLoaded: allTabEntries.length,
       totalShown: filteredEntries.length,
       activeTab: this._activeTab
     };
@@ -72,14 +75,14 @@ export class SWRIFTSCompendiumBrowser extends Application {
       context
     );
 
-    const resultsContainer = this.element.find(".compendium-results");
-    if (!resultsContainer.length) {
-      console.warn("⚠️ .compendium-results not found in DOM");
+    const resultsWrapper = this.element.find(".compendium-results-wrapper");
+    if (!resultsWrapper.length) {
+      console.warn("⚠️ .compendium-results-wrapper not found in DOM");
       return;
     }
 
-    resultsContainer.html(html);
-    this._bindResultEvents?.();
+    resultsWrapper.html(`<div class=\"compendium-results\">${html}</div>`);
+    this.activateListeners(this.element);
   }
 
   async _loadAllGameItems() {
@@ -97,7 +100,6 @@ export class SWRIFTSCompendiumBrowser extends Application {
         const validItems = [];
         for (const item of items) {
           try {
-            // Access a required field to trigger validation
             if (!item.name || typeof item.name !== "string") throw new Error("Missing or invalid name");
             validItems.push(item);
           } catch (validationError) {
@@ -176,37 +178,48 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   activateListeners(html) {
-    html.find(".type-tab").on("click", async ev => {
+    html.find(".type-tab").off("click").on("click", async ev => {
       const tab = ev.currentTarget.dataset.type;
       this._activeTab = tab;
       console.log("🔁 Switching to tab:", tab);
       await this.updateResultsList();
     });
 
-    html.find(".browser-sort").on("change", ev => {
+    html.find(".browser-sort").off("change").on("change", ev => {
       this._sortField = ev.currentTarget.value;
       this.render();
     });
 
-    html.find(".sort-direction").on("click", () => {
+    html.find(".sort-direction").off("click").on("click", () => {
       this._sortDirection = this._sortDirection === "asc" ? "desc" : "asc";
       this.render();
     });
 
-    html.find(".browser-search").on("input", ev => {
+    html.find(".browser-search").off("input").on("input", ev => {
       this._searchTerm = ev.currentTarget.value;
       this._loadedPages = 1;
       this.render();
     });
 
-    html.find(".load-more").on("click", () => {
-      this._loadedPages++;
-      this.render();
-    });
+    // Bind to both card rows (.result-row) and table rows (.table-result)
+    html.find(".result-row, .table-result")
+      .off("click")
+      .on("click", async ev => {
+        const uuid = ev.currentTarget.dataset.uuid;
+        if (!uuid) return;
 
-    html.find(".result-row").on("dragstart", ev => {
-      const uuid = ev.currentTarget.dataset.uuid;
-      ev.originalEvent.dataTransfer.setData("text/plain", uuid);
+        const doc = await fromUuid(uuid);
+        if (!doc) {
+          console.warn("Could not resolve UUID:", uuid);
+          return;
+        }
+
+        doc.sheet.render(true);
+      })
+      .off("dragstart")
+      .on("dragstart", ev => {
+        const uuid = ev.currentTarget.dataset.uuid;
+        ev.originalEvent.dataTransfer.setData("text/plain", uuid);
     });
   }
 
@@ -244,7 +257,6 @@ export class SWRIFTSCompendiumBrowser extends Application {
     return container;
   }
 
-  //Debug Function
   static debugIconicFrameworks() {
     const matches = this._allItems.filter(item => {
       return (

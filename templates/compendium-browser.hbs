@@ -1,46 +1,55 @@
 <div class="swrifts-compendium-browser">
 
   <!-- Top Navigation Tabs -->
-  <nav class="browser-tabs">
+  <nav class="browser-tabs" role="tablist" aria-label="Compendium Tabs">
     {{#each typeOptions}}
       <button 
         class="type-tab {{#ifEquals ../activeTab value}}active{{/ifEquals}}" 
-        data-type="{{value}}">
+        data-type="{{value}}"
+        role="tab"
+        aria-selected="{{#ifEquals ../activeTab value}}true{{else}}false{{/ifEquals}}"
+        tabindex="{{#ifEquals ../activeTab value}}0{{else}}-1{{/ifEquals}}">
         {{label}}
       </button>
     {{/each}}
   </nav>
 
-  <!-- Main Content Area (Left Filters + Right Results) -->
+  <!-- Main Content Area (Sidebar + Results) -->
   <div class="browser-body">
 
     <!-- Sidebar: Search, Sort, Filters -->
-    <aside class="browser-sidebar">
+    <aside class="browser-sidebar" role="complementary" aria-label="Compendium Filters">
+
       <div class="search-group">
-        <label for="search">Search</label>
+        <label for="search" class="text-label">Search</label>
         <input 
           type="text" 
+          id="search"
           class="browser-search" 
           placeholder="Search by name, tags, or description" 
+          aria-label="Search by name, tags, or description"
           value="{{searchTerm}}" />
       </div>
 
       <div class="sort-group">
-        <label for="sort">Sort By</label>
-        <select class="browser-sort">
+        <label for="sort" class="text-label">Sort By</label>
+        <select id="sort" class="browser-sort" aria-label="Sort entries">
           <option value="name" {{#ifEquals sortField "name"}}selected{{/ifEquals}}>Name</option>
           <option value="source" {{#ifEquals sortField "source"}}selected{{/ifEquals}}>Source</option>
           <!-- Add more sort fields as needed -->
         </select>
 
-        <button class="sort-direction" title="Toggle Sort Direction">
+        <button 
+          class="sort-direction" 
+          title="Toggle Sort Direction"
+          aria-pressed="{{#ifEquals sortDirection "asc"}}true{{else}}false{{/ifEquals}}">
           {{#ifEquals sortDirection "asc"}}⬆️{{else}}⬇️{{/ifEquals}}
         </button>
       </div>
 
       {{#if filters.tags.length}}
-        <div class="filter-group">
-          <label>Tags</label>
+        <div class="filter-group" role="group" aria-label="Tag Filters">
+          <label class="text-label">Tags</label>
           {{#each filters.tags}}
             <label>
               <input type="checkbox" name="tag-filter" value="{{this}}" /> {{this}}
@@ -48,20 +57,15 @@
           {{/each}}
         </div>
 
-        <button class="clear-filters">Clear Filters</button>
+        <button class="clear-filters" type="button" aria-label="Clear all filters">Clear Filters</button>
       {{/if}}
 
     </aside>
 
     <!-- Content Area: Entries Table -->
-    <section class="browser-results">
+    <section class="browser-results" role="region" aria-live="polite" aria-label="Compendium Results">
 
-      <!-- Status Summary -->
-      <div class="browser-status" style="margin: 0 0 10px 0; font-size: 0.9em; color: var(--color-text-light);">
-        Showing {{totalShown}} of {{totalLoaded}} entries
-      </div>
-
-      <!-- Scrollable container for infinite scroll -->
+      <!-- Scrollable container for entries -->
       <div class="compendium-results-wrapper">
         <div class="compendium-results">
           {{> "compendium-results" entries=entries }}
@@ -69,5 +73,6 @@
       </div>
 
     </section>
+
   </div>
 </div>
