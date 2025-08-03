@@ -20,7 +20,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
     this._searchTerm = "";
     this._sortField = "name";
     this._sortDirection = "asc";
-    this._filters = { tags: [], sources: [] };
+    this._filters = { sources: [] };
     this._loadedPages = 1;
   }
 
@@ -81,7 +81,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
       return;
     }
 
-    resultsWrapper.html(`<div class=\"compendium-results\">${html}</div>`);
+    resultsWrapper.html(`<div class="compendium-results">${html}</div>`);
     this.activateListeners(this.element);
   }
 
@@ -114,8 +114,24 @@ export class SWRIFTSCompendiumBrowser extends Application {
       }
     }
 
-    console.log(`✅ Total items loaded: ${allItems.length}`);
-    return allItems;
+    const itemsWithSource = allItems.filter(item => {
+      const source = item.system?.source;
+      return typeof source === "string" && source.trim().length > 0;
+    });
+
+    const uniqueMap = new Map();
+    for (const item of itemsWithSource) {
+      if (!item.name) continue;
+      const nameKey = item.name.toLowerCase();
+
+      if (!uniqueMap.has(nameKey)) {
+        uniqueMap.set(nameKey, item);
+      }
+    }
+
+    const filteredItems = Array.from(uniqueMap.values());
+    console.log(`✅ Total unique items after filtering and deduplication: ${filteredItems.length}`);
+    return filteredItems;
   }
 
   _filterItemByTab(item, tab) {
@@ -143,8 +159,8 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   _getAvailableFilters(entries) {
-    const tags = [...new Set(entries.flatMap(i => i.system?.tags ?? []))];
-    return { tags };
+    const sources = [...new Set(entries.map(i => (i.system?.source ?? "Unknown").trim()).filter(Boolean))].sort();
+    return { sources };
   }
 
   _applyFiltersAndSorting(entries) {
@@ -155,20 +171,25 @@ export class SWRIFTSCompendiumBrowser extends Application {
       filtered = filtered.filter(entry => {
         const name = entry.name?.toLowerCase() ?? "";
         const desc = entry.system?.description?.value?.toLowerCase() ?? "";
-        const tags = entry.system?.tags?.join(" ")?.toLowerCase() ?? "";
-        return name.includes(search) || desc.includes(search) || tags.includes(search);
+        return name.includes(search) || desc.includes(search);
       });
     }
 
-    if (this._filters.tags?.length) {
+    if (this._filters.sources?.length) {
       filtered = filtered.filter(i =>
-        i.system?.tags?.some(t => this._filters.tags.includes(t))
+        this._filters.sources.includes((i.system?.source ?? "Unknown").trim())
       );
     }
 
     filtered.sort((a, b) => {
-      const fieldA = a[this._sortField] ?? "";
-      const fieldB = b[this._sortField] ?? "";
+      const getFieldValue = (item) => {
+        if (this._sortField === "source") return (item.system?.source ?? "").toLowerCase();
+        if (this._sortField === "name") return (item.name ?? "").toLowerCase();
+        return (item[this._sortField] ?? "").toString().toLowerCase();
+      };
+
+      const fieldA = getFieldValue(a);
+      const fieldB = getFieldValue(b);
       if (fieldA < fieldB) return this._sortDirection === "asc" ? -1 : 1;
       if (fieldA > fieldB) return this._sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -178,34 +199,47 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   activateListeners(html) {
-    // Ensure only active tab is styled
+    // Sync tab active classes
     html.find(".type-tab").removeClass("active");
     html.find(`.type-tab[data-type="${this._activeTab}"]`).addClass("active");
 
     html.find(".type-tab").off("click").on("click", async ev => {
       const tab = ev.currentTarget.dataset.type;
       this._activeTab = tab;
-      console.log("🔁 Switching to tab:", tab);
       await this.updateResultsList();
     });
 
-    html.find(".browser-sort").off("change").on("change", ev => {
+    html.find(".browser-sort").off("change").on("change", async ev => {
       this._sortField = ev.currentTarget.value;
-      this.render();
+      await this.updateResultsList();
     });
 
-    html.find(".sort-direction").off("click").on("click", () => {
+    html.find(".sort-direction").off("click").on("click", async () => {
       this._sortDirection = this._sortDirection === "asc" ? "desc" : "asc";
-      this.render();
+      await this.updateResultsList();
     });
 
-    html.find(".browser-search").off("input").on("input", ev => {
-      this._searchTerm = ev.currentTarget.value;
+    html.find(".browser-search").off("input").on("input", async ev => {
+      this._searchTerm = ev.currentTarget.value.trim();
       this._loadedPages = 1;
-      this.render();
+      await this.updateResultsList();
     });
 
-    // Bind to both card rows (.result-row) and table rows (.table-result)
+    // Source filter checkbox listener
+    html.find("input[name='source-filter']").off("change").on("change", () => {
+      const checkedSources = html.find("input[name='source-filter']:checked");
+      this._filters.sources = checkedSources.map((i, el) => el.value).get();
+      this.updateResultsList();
+    });
+
+    // Clear filters button (clears sources)
+    html.find(".clear-filters").off("click").on("click", async () => {
+      this._filters.sources = [];
+      html.find("input[name='source-filter']").prop("checked", false);
+      await this.updateResultsList();
+    });
+
+    // Bind row click and dragstart
     html.find(".result-row, .table-result")
       .off("click")
       .on("click", async ev => {
@@ -224,7 +258,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
       .on("dragstart", ev => {
         const uuid = ev.currentTarget.dataset.uuid;
         ev.originalEvent.dataTransfer.setData("text/plain", uuid);
-    });
+      });
   }
 
   static async preload() {
@@ -275,7 +309,6 @@ export class SWRIFTSCompendiumBrowser extends Application {
         name: item.name,
         type: item.type,
         subtype: item.system?.subtype,
-        tags: item.system?.tags,
         uuid: item.uuid
       });
     }

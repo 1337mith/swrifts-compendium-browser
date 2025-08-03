@@ -53,30 +53,20 @@ window.analyzeCompendiumItems = async () => {
   }
 
   const typeCounts = {};
-  const tagCounts = {};
 
   for (const item of allItems) {
     const type = item.type ?? "undefined";
     typeCounts[type] = (typeCounts[type] || 0) + 1;
-
-    const tags = item.system?.tags ?? [];
-    for (const tag of tags) {
-      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-    }
   }
 
   console.group("📊 Compendium Item Type Counts");
   console.table(typeCounts);
   console.groupEnd();
 
-  console.group("🏷️ Tag Counts (system.tags)");
-  console.table(tagCounts);
-  console.groupEnd();
-
-  return { typeCounts, tagCounts };
+  return { typeCounts };
 };
 
-// Debug Function for item types, tags, and subtypes
+// Debug Function for item types, and subtypes
 window.analyzeCompendiumItems = async () => {
   const packs = game.packs.filter(p =>
     p.documentName === "Item" &&
@@ -95,19 +85,12 @@ window.analyzeCompendiumItems = async () => {
   }
 
   const typeCounts = {};
-  const tagCounts = {};
   const subtypeCounts = {};
 
   for (const item of allItems) {
     // Count type
     const type = item.type ?? "undefined";
     typeCounts[type] = (typeCounts[type] || 0) + 1;
-
-    // Count tags
-    const tags = item.system?.tags ?? [];
-    for (const tag of tags) {
-      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-    }
 
     // Count subtype
     const subtype = item.system?.subtype ?? null;
@@ -120,13 +103,9 @@ window.analyzeCompendiumItems = async () => {
   console.table(typeCounts);
   console.groupEnd();
 
-  console.group("🏷️ Tag Counts (system.tags)");
-  console.table(tagCounts);
-  console.groupEnd();
-
   console.group("🧬 Subtype Counts (system.subtype)");
   console.table(subtypeCounts);
   console.groupEnd();
 
-  return { typeCounts, tagCounts, subtypeCounts };
+  return { typeCounts, subtypeCounts };
 };

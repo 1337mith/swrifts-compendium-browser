@@ -26,8 +26,8 @@
           type="text" 
           id="search"
           class="browser-search" 
-          placeholder="Search by name, tags, or description" 
-          aria-label="Search by name, tags, or description"
+          placeholder="Search by name or description" 
+          aria-label="Search by name or description"
           value="{{searchTerm}}" />
       </div>
 
@@ -47,17 +47,15 @@
         </button>
       </div>
 
-      {{#if filters.tags.length}}
-        <div class="filter-group" role="group" aria-label="Tag Filters">
-          <label class="text-label">Tags</label>
-          {{#each filters.tags}}
+      {{#if filters.sources.length}}
+        <div class="filter-group" role="group" aria-label="Source Filters">
+          <label class="text-label">Sources</label>
+          {{#each filters.sources}}
             <label>
-              <input type="checkbox" name="tag-filter" value="{{this}}" /> {{this}}
+              <input type="checkbox" name="source-filter" value="{{this}}" {{#if (includes ../_filters.sources this)}}checked{{/if}} /> {{this}}
             </label>
           {{/each}}
         </div>
-
-        <button class="clear-filters" type="button" aria-label="Clear all filters">Clear Filters</button>
       {{/if}}
 
     </aside>
