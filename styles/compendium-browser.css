@@ -55,8 +55,17 @@
   border: 1px solid var(--heading-dark);
   overflow: hidden;
   border-radius: 10px;
-  resize: vertical;
+  resize: both;
   min-height: 320px;
+}
+
+.window-app.swrifts-compendium-browser .window-content {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* ==== CUSTOM SCROLLBARS ==== */
@@ -123,23 +132,27 @@
 /* ==== MAIN BODY LAYOUT ==== */
 .swrifts-compendium-browser .browser-body {
   display: flex;
-  min-height: 400px;
+  flex-direction: row;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
   overflow: hidden;
 }
 
 /* ==== SIDEBAR ==== */
 .browser-sidebar {
-  width: 32%;
+  flex: 0 0 300px;
+  max-width: 400px;
   min-width: 260px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 16px 16px 12px 16px;
   background-color: #2d3642;
-
-  /* Repeating hex pattern background */
   background-image: url("/modules/swrifts-tlpg/assets/layout/background-parts/hex-pattern.webp");
   background-repeat: repeat;
   background-position: center;
   border-right: 2px solid var(--heading-dark);
-  overflow-y: auto;
   box-shadow: 4px 0 10px 0 rgba(0, 0, 0, 0.08);
 }
 .browser-sidebar label {
@@ -191,7 +204,8 @@
 
 /* ==== RESULTS AREA ==== */
 .browser-results {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;

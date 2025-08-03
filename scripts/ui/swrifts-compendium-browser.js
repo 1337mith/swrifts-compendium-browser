@@ -178,6 +178,10 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   activateListeners(html) {
+    // Ensure only active tab is styled
+    html.find(".type-tab").removeClass("active");
+    html.find(`.type-tab[data-type="${this._activeTab}"]`).addClass("active");
+
     html.find(".type-tab").off("click").on("click", async ev => {
       const tab = ev.currentTarget.dataset.type;
       this._activeTab = tab;
