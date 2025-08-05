@@ -39,11 +39,18 @@
         "type": "system",
         "compatibility": {}
       }
+    ],
+    "requires": [
+      {
+        "id": "swrifts-tlpg",
+        "type": "module",
+        "compatibility": {}
+      }
     ]
   },
   "bugs": "https://github.com/1337mith/swrifts-compendium-browser/issues",
   "manifest": "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v0.6.0/module.json",
   "download": "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v0.6.0/swrifts-compendium-browser-0.6.0.zip",
-  "flags": {},
-  "changelog": "https://github.com/1337mith/swrifts-compendium-browser/releases"
+  "changelog": "https://github.com/1337mith/swrifts-compendium-browser/releases",
+  "flags": {}
 }
