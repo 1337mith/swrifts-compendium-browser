@@ -1,7 +1,7 @@
 {
   "id": "swrifts-compendium-browser",
   "title": "Savage Rifts - Compendium Browser",
-  "description": "<p>A Savage Rifts compendium browser module with modular layout and FoundryVTT v13 compatibility.</p>",
+  "description": "<p>A Savage Rifts compendium browser module with modular layout and FoundryVTT v13 compatibility. Current iteration adds a macro you use to launch the browser.</p>",
   "version": "0.6.0",
   "authors": [
     {
@@ -43,7 +43,7 @@
   },
   "bugs": "https://github.com/1337mith/swrifts-compendium-browser/issues",
   "manifest": "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/main/module.json",
-  "download": "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v0.6.0/module.zip",
+  "download": "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v0.6.0/swrifts-compendium-browser-0.6.0.zip",
   "flags": {},
   "changelog": "https://github.com/1337mith/swrifts-compendium-browser/releases"
 }
