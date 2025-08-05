@@ -42,7 +42,7 @@
     ]
   },
   "bugs": "https://github.com/1337mith/swrifts-compendium-browser/issues",
-  "manifest": "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/main/module.json",
+  "manifest": "https://raw.githubusercontent.com/1337mith/swrifts-compendium-browser/v0.6.0/module.json",
   "download": "https://github.com/1337mith/swrifts-compendium-browser/releases/download/v0.6.0/swrifts-compendium-browser-0.6.0.zip",
   "flags": {},
   "changelog": "https://github.com/1337mith/swrifts-compendium-browser/releases"
