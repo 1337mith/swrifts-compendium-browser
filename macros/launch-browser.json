@@ -1,0 +1,10 @@
+{
+  "name": "Open Compendium Browser",
+  "type": "script",
+  "scope": "global",
+  "command": "window.showCompendiumBrowser();",
+  "img": "/modules/swrifts-tlpg/assets/icons/swrifts-research.webp",
+  "flags": {
+    "core": { "macro": true }
+  }
+}

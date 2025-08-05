@@ -20,50 +20,80 @@
     <!-- Sidebar: Search, Sort, Filters -->
     <aside class="browser-sidebar" role="complementary" aria-label="Compendium Filters">
 
+      <!-- Search -->
       <div class="search-group">
-        <label for="search" class="text-label">Search</label>
         <input 
           type="text" 
           id="search"
           class="browser-search" 
-          placeholder="Search by name or description" 
-          aria-label="Search by name or description"
+          placeholder="Search Text" 
+          aria-label="Search Text"
           value="{{searchTerm}}" />
       </div>
 
+      <!-- Sort Options -->
       <div class="sort-group">
-        <label for="sort" class="text-label">Sort By</label>
+        <label for="sort" class="text-label">Order by</label>
         <select id="sort" class="browser-sort" aria-label="Sort entries">
           <option value="name" {{#ifEquals sortField "name"}}selected{{/ifEquals}}>Name</option>
           <option value="source" {{#ifEquals sortField "source"}}selected{{/ifEquals}}>Source</option>
-          <!-- Add more sort fields as needed -->
+          {{#if (eq activeTab "hindrances")}}
+            <option value="severity" {{#ifEquals sortField "severity"}}selected{{/ifEquals}}>Severity</option>
+          {{/if}}
         </select>
-
-        <button 
+        <span 
           class="sort-direction" 
+          role="button" 
+          tabindex="0" 
           title="Toggle Sort Direction"
           aria-pressed="{{#ifEquals sortDirection "asc"}}true{{else}}false{{/ifEquals}}">
-          {{#ifEquals sortDirection "asc"}}⬆️{{else}}⬇️{{/ifEquals}}
-        </button>
+          {{#ifEquals sortDirection "asc"}}▲{{else ifEquals sortDirection "desc"}}▼{{else}}⇅{{/ifEquals}}
+        </span>
       </div>
 
+      <button class="clear-filters" aria-label="Clear Filters">Clear Filters</button>
+
+      <!-- Sources Filter -->
       {{#if filters.sources.length}}
-        <div class="filter-group" role="group" aria-label="Source Filters">
-          <label class="text-label">Sources</label>
-          {{#each filters.sources}}
-            <label>
-              <input type="checkbox" name="source-filter" value="{{this}}" {{#if (includes ../_filters.sources this)}}checked{{/if}} /> {{this}}
-            </label>
-          {{/each}}
+        <div class="filter-group">
+          <button class="sources-toggle" aria-expanded="false" aria-controls="sources-list" aria-label="Toggle Sources filter list">
+            Sources ▶
+          </button>
+          <ul id="sources-list" class="browser-sidebar sources-list collapsed">
+            {{#each filters.sources}}
+              <li>
+                <label class="hex-checkbox-label">
+                  <input type="checkbox" name="source-filter" value="{{this}}" {{#if (includes ../_filters.sources this)}}checked{{/if}} /> {{this}}
+                </label>
+              </li>
+            {{/each}}
+          </ul>
+        </div>
+      {{/if}}
+
+      <!-- Severity Filter Only on Hindrances Tab -->
+      {{#if (and (eq activeTab "hindrances") severityFilters.length)}}
+        <div class="filter-group">
+          <button class="sources-toggle filter-severity" aria-expanded="false" aria-controls="severity-list" aria-label="Toggle Severity filter list">
+            Severity ▶
+          </button>
+          <ul id="severity-list" class="browser-sidebar sources-list severity-list collapsed">
+            {{#each severityFilters}}
+              <li>
+                <label class="hex-checkbox-label">
+                  <input type="checkbox" name="severity-filter" value="{{this}}" {{#if (includes ../_filters.severity this)}}checked{{/if}} /> {{this}}
+                </label>
+              </li>
+            {{/each}}
+          </ul>
         </div>
       {{/if}}
 
     </aside>
 
-    <!-- Content Area: Entries Table -->
+    <!-- Content Area: Entries -->
     <section class="browser-results" role="region" aria-live="polite" aria-label="Compendium Results">
 
-      <!-- Scrollable container for entries -->
       <div class="compendium-results-wrapper">
         <div class="compendium-results">
           {{> "compendium-results" entries=entries }}
@@ -71,6 +101,5 @@
       </div>
 
     </section>
-
   </div>
 </div>

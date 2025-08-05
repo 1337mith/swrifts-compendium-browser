@@ -19,8 +19,9 @@ export class SWRIFTSCompendiumBrowser extends Application {
     this._activeTab = options.activeTab || "iconic-frameworks";
     this._searchTerm = "";
     this._sortField = "name";
-    this._sortDirection = "asc";
+    this._sortDirection = "unsorted"; // initialize with "unsorted"
     this._filters = { sources: [] };
+    this._filters.severity = [];
     this._loadedPages = 1;
   }
 
@@ -29,25 +30,54 @@ export class SWRIFTSCompendiumBrowser extends Application {
       SWRIFTSCompendiumBrowser._allItems = await this._loadAllGameItems();
     }
 
+    // Debug: Log all unique item types currently loaded
+    {
+      const uniqueTypes = new Set(SWRIFTSCompendiumBrowser._allItems.map(item => item.type));
+      console.log("Unique item types loaded:", [...uniqueTypes]);
+
+      const allSkills = SWRIFTSCompendiumBrowser._allItems.filter(item => 
+        item.type === 'skill' || 
+        (item.system?.subtype && item.system.subtype.toLowerCase() === 'skill')
+      );
+      console.log("All detected skill names:", allSkills.map(i => i.name));
+    }
+
+    // Entries filtered by active tab for display
     const allTabEntries = SWRIFTSCompendiumBrowser._allItems.filter(item =>
       this._filterItemByTab(item, this._activeTab)
     );
 
+    // Entries further filtered and sorted for final results
     const filteredEntries = this._applyFiltersAndSorting(allTabEntries);
 
+    // Build available filters from all items *not* just filtered by current tab
+    const allSources = this._getAvailableFilters(SWRIFTSCompendiumBrowser._allItems);
+
+    // Build severity filters only for hindrances tab
+    let severityFilters = [];
+    if (this._activeTab === "hindrances") {
+      severityFilters = this._getAvailableSeverityFilters(allTabEntries);
+    }
+
+    // Debug log to confirm all unique sources including SWADE
+    console.log("All unique sources for filter:", allSources.sources);
+    console.log("Severity filters for hindrances:", severityFilters);
+
     const typeOptions = [
-      { value: "iconic-frameworks", label: "Iconic Frameworks" },
       { value: "ancestries", label: "Ancestries" },
-      { value: "special-abilities", label: "Special Abilities" },
-      { value: "edges", label: "Edges" },
+      { value: "iconic-frameworks", label: "Frameworks" },
       { value: "hindrances", label: "Hindrances" },
+      { value: "special-abilities", label: "Abilities" },
+      { value: "skills", label: "Skills" },
+      { value: "edges", label: "Edges" },
       { value: "gear", label: "Gear" }
     ];
 
     return {
       activeTab: this._activeTab,
       entries: filteredEntries,
-      filters: this._getAvailableFilters(allTabEntries),
+      filters: allSources,
+      severityFilters,
       sortField: this._sortField,
       sortDirection: this._sortDirection,
       searchTerm: this._searchTerm,
@@ -63,11 +93,15 @@ export class SWRIFTSCompendiumBrowser extends Application {
     );
     const filteredEntries = this._applyFiltersAndSorting(allTabEntries);
 
+    console.log("Rendering entries count:", filteredEntries.length);
+
     const context = {
       entries: filteredEntries,
       totalLoaded: allTabEntries.length,
       totalShown: filteredEntries.length,
-      activeTab: this._activeTab
+      activeTab: this._activeTab,
+      sortField: this._sortField,
+      sortDirection: this._sortDirection
     };
 
     const html = await foundry.applications.handlebars.renderTemplate(
@@ -151,16 +185,46 @@ export class SWRIFTSCompendiumBrowser extends Application {
         return type === "edge";
       case "hindrances":
         return type === "hindrance";
+      case "skills":
+        return type === "skill" 
+            || (item.system?.subtype?.toLowerCase?.() === "skill");
       case "gear":
-        return ["gear", "consumable"].includes(type);
+        return ["gear", "consumable", "weapon", "armor", "shield"].includes(type);
       default:
         return false;
     }
   }
 
   _getAvailableFilters(entries) {
-    const sources = [...new Set(entries.map(i => (i.system?.source ?? "Unknown").trim()).filter(Boolean))].sort();
+    // Extract unique source names from entries, trimming and filtering out empty strings
+    let sources = [...new Set(entries.map(i => (i.system?.source ?? "Unknown").trim()).filter(Boolean))];
+
+    // Normalize SWADE source names to a single label "SWADE"
+    sources = sources.map(src => {
+      if (src.toLowerCase().includes("swade")) return "SWADE";
+      return src;
+    });
+
+    // Deduplicate after normalization
+    sources = [...new Set(sources)];
+
+    // Sort alphabetically
+    sources.sort();
+
+    // Debug
+    console.log("Unique (normalized) sources recognized in entries:", sources);
+
     return { sources };
+  }
+
+  _getAvailableSeverityFilters(entries) {
+    let severities = [...new Set(
+      entries
+        .map(i => (i.system?.severity ?? "").trim())
+        .filter(s => s.length > 0)
+    )];
+    severities.sort();
+    return severities;
   }
 
   _applyFiltersAndSorting(entries) {
@@ -175,25 +239,40 @@ export class SWRIFTSCompendiumBrowser extends Application {
       });
     }
 
+    // Source filter
     if (this._filters.sources?.length) {
       filtered = filtered.filter(i =>
         this._filters.sources.includes((i.system?.source ?? "Unknown").trim())
       );
     }
 
-    filtered.sort((a, b) => {
-      const getFieldValue = (item) => {
-        if (this._sortField === "source") return (item.system?.source ?? "").toLowerCase();
-        if (this._sortField === "name") return (item.name ?? "").toLowerCase();
-        return (item[this._sortField] ?? "").toString().toLowerCase();
-      };
+    // Severity filter
+    if (this._filters.severity?.length) {
+      filtered = filtered.filter(i =>
+        this._filters.severity.includes((i.system?.severity ?? "").trim())
+      );
+    }
 
-      const fieldA = getFieldValue(a);
-      const fieldB = getFieldValue(b);
-      if (fieldA < fieldB) return this._sortDirection === "asc" ? -1 : 1;
-      if (fieldA > fieldB) return this._sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
+    // Sorting
+    if (this._sortDirection !== "unsorted") {
+      filtered.sort((a, b) => {
+        const getFieldValue = (item) => {
+          if (this._sortField === "source") return (item.system?.source ?? "").toLowerCase();
+          if (this._sortField === "name") return (item.name ?? "").toLowerCase();
+          if (this._sortField === "severity") {
+            const order = { "minor": 1, "major": 2 };
+            return order[(item.system?.severity ?? "").toLowerCase()] || 99;
+          }
+          return (item[this._sortField] ?? "").toString().toLowerCase();
+        };
+
+        const fieldA = getFieldValue(a);
+        const fieldB = getFieldValue(b);
+        if (fieldA < fieldB) return this._sortDirection === "asc" ? -1 : 1;
+        if (fieldA > fieldB) return this._sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
 
     return filtered;
   }
@@ -204,25 +283,80 @@ export class SWRIFTSCompendiumBrowser extends Application {
     html.find(`.type-tab[data-type="${this._activeTab}"]`).addClass("active");
 
     html.find(".type-tab").off("click").on("click", async ev => {
-      const tab = ev.currentTarget.dataset.type;
-      this._activeTab = tab;
+      this._activeTab = ev.currentTarget.dataset.type;
       await this.updateResultsList();
     });
 
+    // Sort dropdown change
     html.find(".browser-sort").off("change").on("change", async ev => {
       this._sortField = ev.currentTarget.value;
       await this.updateResultsList();
     });
 
-    html.find(".sort-direction").off("click").on("click", async () => {
-      this._sortDirection = this._sortDirection === "asc" ? "desc" : "asc";
-      await this.updateResultsList();
-    });
+    // Sort direction button (click and keyboard)
+    html.find(".sort-direction")
+      .off("click keydown")
+      .on("click", () => {
+        this._sortDirection = this._getNextSortDirection(this._sortDirection);
+        this.updateResultsList();
+      })
+      .on("keydown", ev => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          this._sortDirection = this._getNextSortDirection(this._sortDirection);
+          this.updateResultsList();
+        }
+      });
 
+    // Search input event
     html.find(".browser-search").off("input").on("input", async ev => {
       this._searchTerm = ev.currentTarget.value.trim();
       this._loadedPages = 1;
       await this.updateResultsList();
+    });
+
+    // Toggle collapse/expand for Sources list
+    html.find(".sources-toggle").off("click keydown").on("click", ev => {
+      const btn = ev.currentTarget;
+      const sourcesList = html.find("#sources-list");
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+
+      if (expanded) {
+        btn.setAttribute("aria-expanded", "false");
+        btn.textContent = "Sources ▶";
+        sourcesList.addClass("collapsed");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Sources ▼";
+        sourcesList.removeClass("collapsed");
+      }
+    }).on("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        ev.currentTarget.click();
+      }
+    });
+
+    // Toggle collapse/expand for Severity list
+    html.find(".filter-severity").off("click keydown").on("click", ev => {
+      const btn = ev.currentTarget;
+      const severityList = html.find("#severity-list");
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+
+      if (expanded) {
+        btn.setAttribute("aria-expanded", "false");
+        btn.textContent = "Severity ▶";
+        severityList.addClass("collapsed");
+      } else {
+        btn.setAttribute("aria-expanded", "true");
+        btn.textContent = "Severity ▼";
+        severityList.removeClass("collapsed");
+      }
+    }).on("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        ev.currentTarget.click();
+      }
     });
 
     // Source filter checkbox listener
@@ -232,33 +366,46 @@ export class SWRIFTSCompendiumBrowser extends Application {
       this.updateResultsList();
     });
 
-    // Clear filters button (clears sources)
+    // Severity filter checkbox listener
+    html.find("input[name='severity-filter']").off("change").on("change", () => {
+      const checkedSeverities = html.find("input[name='severity-filter']:checked");
+      this._filters.severity = checkedSeverities.map((i, el) => el.value).get();
+      this.updateResultsList();
+    });
+
+    // Clear filters button (clears sources and severity)
     html.find(".clear-filters").off("click").on("click", async () => {
       this._filters.sources = [];
+      this._filters.severity = [];
       html.find("input[name='source-filter']").prop("checked", false);
+      html.find("input[name='severity-filter']").prop("checked", false);
       await this.updateResultsList();
     });
 
     // Bind row click and dragstart
-    html.find(".result-row, .table-result")
-      .off("click")
-      .on("click", async ev => {
-        const uuid = ev.currentTarget.dataset.uuid;
-        if (!uuid) return;
+    html.find(".compendium-list-row").off("dragstart").on("dragstart", ev => {
+      const uuid = ev.currentTarget.dataset.uuid;
+      console.log("Dragging item UUID:", uuid);
+      const dt = ev.originalEvent.dataTransfer;
 
-        const doc = await fromUuid(uuid);
-        if (!doc) {
-          console.warn("Could not resolve UUID:", uuid);
-          return;
-        }
+      dt.setData("text/plain", uuid);
+      dt.setData("text/foundry-item", JSON.stringify({
+        type: "Item",
+        uuid: uuid
+      }));
 
-        doc.sheet.render(true);
-      })
-      .off("dragstart")
-      .on("dragstart", ev => {
-        const uuid = ev.currentTarget.dataset.uuid;
-        ev.originalEvent.dataTransfer.setData("text/plain", uuid);
-      });
+      const img = ev.currentTarget.querySelector("img.result-icon");
+      if (img) dt.setDragImage(img, 20, 20);
+    });
+  }
+
+  _getNextSortDirection(current) {
+    switch (current) {
+      case "unsorted": return "asc";
+      case "asc": return "desc";
+      case "desc": return "unsorted";
+      default: return "unsorted";
+    }
   }
 
   static async preload() {

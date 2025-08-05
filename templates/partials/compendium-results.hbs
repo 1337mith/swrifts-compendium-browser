@@ -1,71 +1,31 @@
 {{#if entries.length}}
 
-  <div class="text-label">Showing {{totalShown}} of {{totalLoaded}}</div>
+  </br><div class="text-label">Showing {{totalShown}} of {{totalLoaded}}</div></br>
 
+  <ul class="compendium-list-results">
+    {{#each entries}}
+      <li class="compendium-list-row {{#if @odd}}striped{{/if}}" data-id="{{_id}}" data-uuid="{{uuid}}" draggable="true">
+        <img class="result-icon" src="{{img}}" alt="{{name}}" />
+        <span class="result-name">{{name}}</span>
 
-  {{#if (or (eq activeTab "iconic-frameworks") (eq activeTab "ancestries") (eq activeTab "special-abilities"))}}
-    <div class="compendium-results card-mode">
-      {{#each entries}}
-        <div class="result-row card-result" data-id="{{_id}}" data-uuid="{{uuid}}" draggable="true">
-          <img class="result-icon" src="{{img}}" alt="{{name}}" />
-          <div class="result-content">
-            <div class="result-header">
-              <strong class="result-name" title="{{name}}">{{name}}</strong>
-              <span class="result-type">{{capitalize type}}</span>
-            </div>
-            <div class="result-meta">
-              <span class="result-source">{{fallback system.source "Unknown Source"}}</span>
-            </div>
-            <div class="result-description">
-              {{previewDescription system.description.value}}
-            </div>
-          </div>
-        </div>
-      {{/each}}
-    </div>
-  
-  {{else}}
-    <div class="compendium-results table-mode">
-      <!-- Themed polygonal wrapper for table -->
-      <div class="table-wrapper">
-        <table class="compendium-table">
-          <thead>
-            <tr>
-              <th class="main-heading">Name</th>
-              {{#if (eq activeTab "edges")}}
-                <th class="sub-heading">Requirements</th>
-              {{/if}}
-              {{#if (eq activeTab "hindrances")}}
-                <th class="sub-heading">Severity</th>
-              {{/if}}
-              {{#if (eq activeTab "gear")}}
-                <th class="sub-heading">Type</th>
-              {{/if}}
-              <th class="sub-heading">Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each entries}}
-              <tr class="table-result" data-id="{{_id}}" data-uuid="{{uuid}}" draggable="true">
-                <td class="result-click-target result-name" title="{{name}}">{{name}}</td>
-                {{#if (eq ../activeTab "edges")}}
-                  <td class="result-click-target">{{system.requirements}}</td>
-                {{/if}}
-                {{#if (eq ../activeTab "hindrances")}}
-                  <td class="result-click-target">{{system.severity}}</td>
-                {{/if}}
-                {{#if (eq ../activeTab "gear")}}
-                  <td class="result-click-target">{{capitalize type}}</td>
-                {{/if}}
-                <td class="result-click-target">{{fallback system.source "Unknown"}}</td>
-              </tr>
-            {{/each}}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  {{/if}}
+        {{#if (eq ../activeTab "hindrances")}}
+          <span class="result-extra severity">{{system.severity}}</span>
+        {{/if}}
+
+        {{#if (and (eq ../activeTab "skills") (eq type "skill"))}}
+          <span class="result-extra linked-attribute">{{system.attribute}}</span>
+        {{/if}}
+
+        {{#if (eq ../activeTab "edges")}}
+          <span class="result-extra requirements">{{firstValue system.requirements}}</span>
+        {{/if}}
+        {{#if (eq ../activeTab "gear")}}
+          <span class="result-extra gear">{{capitalize type}}</span>
+        {{/if}}
+      </li>
+    {{/each}}
+  </ul>
 
 {{else}}
-  <p class="no-results">No results found for this tab.</p>
+<p class="no-results">No results found for this tab.</p>
 {{/if}}
