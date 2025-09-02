@@ -22,7 +22,7 @@ jobs:
         zip -r swrifts-compendium-browser-${VERSION}.zip swrifts-compendium-browser/
       
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: swrifts-compendium-browser-${{ env.VERSION }}.zip
         path: swrifts-compendium-browser-${{ env.VERSION }}.zip
