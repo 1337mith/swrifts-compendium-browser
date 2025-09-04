@@ -16,10 +16,10 @@ Hooks.once("init", async () => {
   });
   Handlebars.registerHelper('firstValue', function(value) {
     if (typeof value === 'string') {
-      return value.split(',')[0];
+      return value.split(',');
     }
     if (Array.isArray(value)) {
-      return value[0];
+      return value;
     }
     return '';
   });
@@ -58,13 +58,10 @@ Hooks.once("ready", async () => {
 });
 
 Hooks.on("renderActorSheet", (sheet, html, data) => {
-  // Listen to native drop event on the sheet element
   html[0].addEventListener("drop", async event => {
     event.preventDefault();
 
-    // Try to get Foundry’s structured drag data first
     let dropData = null;
-
     try {
       const raw = event.dataTransfer.getData("text/foundry-item");
       if (raw) dropData = JSON.parse(raw);
@@ -72,7 +69,6 @@ Hooks.on("renderActorSheet", (sheet, html, data) => {
       console.warn("Failed to parse text/foundry-item data:", err);
     }
 
-    // Fallback to plain text UUID if structured data missing
     if (!dropData) {
       const raw = event.dataTransfer.getData("text/plain");
       if (raw) dropData = { type: "Item", uuid: raw };
@@ -81,14 +77,21 @@ Hooks.on("renderActorSheet", (sheet, html, data) => {
     if (dropData && dropData.type === "Item" && dropData.uuid) {
       console.log("Detected drop of Item with UUID:", dropData.uuid);
 
-      const item = await fromUuid(dropData.uuid);
-      if (!item) {
-        return console.error("Could not find item document from UUID", dropData.uuid);
-      }
+      try {
+        const item = await fromUuid(dropData.uuid);
+        if (!item) {
+          console.error("Could not find item document from UUID", dropData.uuid);
+          return;
+        }
 
-      // Add the item to the actor
-      await sheet.actor.createEmbeddedDocuments("Item", [item.toObject()]);
-      console.log("Item added to actor from drop (manual).");
+        await sheet.actor.createEmbeddedDocuments("Item", [item.toObject()]);
+        console.log("Item added to actor from drop.");
+
+        // Refresh sheet UI to reflect added items
+        sheet.render(false);
+      } catch (e) {
+        console.error("Error adding item to actor:", e);
+      }
     }
   });
 });
@@ -100,39 +103,6 @@ window.analyzeCompendiumItems = async () => {
   );
 
   const allItems = [];
-
-  for (const pack of packs) {
-    try {
-      const items = await pack.getDocuments();
-      allItems.push(...items);
-    } catch (e) {
-      console.warn(`Failed to load: ${pack.metadata.label}`, e);
-    }
-  }
-
-  const typeCounts = {};
-
-  for (const item of allItems) {
-    const type = item.type ?? "undefined";
-    typeCounts[type] = (typeCounts[type] || 0) + 1;
-  }
-
-  console.group("📊 Compendium Item Type Counts");
-  console.table(typeCounts);
-  console.groupEnd();
-
-  return { typeCounts };
-};
-
-// Debug Function for item types, and subtypes
-window.analyzeCompendiumItems = async () => {
-  const packs = game.packs.filter(p =>
-    p.documentName === "Item" &&
-    (p.metadata.packageName.startsWith("swade") || p.metadata.packageName.startsWith("swrifts"))
-  );
-
-  const allItems = [];
-
   for (const pack of packs) {
     try {
       const items = await pack.getDocuments();
