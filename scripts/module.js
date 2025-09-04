@@ -16,10 +16,10 @@ Hooks.once("init", async () => {
   });
   Handlebars.registerHelper('firstValue', function(value) {
     if (typeof value === 'string') {
-      return value.split(',')[0];
+      return value.split(',');
     }
     if (Array.isArray(value)) {
-      return value[0];
+      return value;
     }
     return '';
   });
@@ -59,12 +59,11 @@ Hooks.once("ready", async () => {
 
 Hooks.on("renderActorSheet", (sheet, html, data) => {
   // Listen to native drop event on the sheet element
-  html[0].addEventListener("drop", async event => {
+  html.addEventListener("drop", async event => {
     event.preventDefault();
 
     // Try to get Foundry’s structured drag data first
     let dropData = null;
-
     try {
       const raw = event.dataTransfer.getData("text/foundry-item");
       if (raw) dropData = JSON.parse(raw);
@@ -100,39 +99,6 @@ window.analyzeCompendiumItems = async () => {
   );
 
   const allItems = [];
-
-  for (const pack of packs) {
-    try {
-      const items = await pack.getDocuments();
-      allItems.push(...items);
-    } catch (e) {
-      console.warn(`Failed to load: ${pack.metadata.label}`, e);
-    }
-  }
-
-  const typeCounts = {};
-
-  for (const item of allItems) {
-    const type = item.type ?? "undefined";
-    typeCounts[type] = (typeCounts[type] || 0) + 1;
-  }
-
-  console.group("📊 Compendium Item Type Counts");
-  console.table(typeCounts);
-  console.groupEnd();
-
-  return { typeCounts };
-};
-
-// Debug Function for item types, and subtypes
-window.analyzeCompendiumItems = async () => {
-  const packs = game.packs.filter(p =>
-    p.documentName === "Item" &&
-    (p.metadata.packageName.startsWith("swade") || p.metadata.packageName.startsWith("swrifts"))
-  );
-
-  const allItems = [];
-
   for (const pack of packs) {
     try {
       const items = await pack.getDocuments();

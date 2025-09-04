@@ -32,12 +32,16 @@ export class SWRIFTSCompendiumBrowser extends Application {
 
     // Debug: Log all unique item types currently loaded
     {
-      const uniqueTypes = new Set(SWRIFTSCompendiumBrowser._allItems.map(item => item.type));
+      const uniqueTypes = new Set(
+        SWRIFTSCompendiumBrowser._allItems.map(item => item.type)
+      );
       console.log("Unique item types loaded:", [...uniqueTypes]);
 
-      const allSkills = SWRIFTSCompendiumBrowser._allItems.filter(item => 
-        item.type === 'skill' || 
-        (item.system?.subtype && item.system.subtype.toLowerCase() === 'skill')
+      const allSkills = SWRIFTSCompendiumBrowser._allItems.filter(
+        item =>
+          item.type === "skill" ||
+          (item.system?.subtype &&
+            item.system.subtype.toLowerCase() === "skill")
       );
       console.log("All detected skill names:", allSkills.map(i => i.name));
     }
@@ -96,7 +100,11 @@ export class SWRIFTSCompendiumBrowser extends Application {
     console.log("Rendering entries count:", filteredEntries.length);
 
     const context = {
-      entries: filteredEntries,
+      entries: filteredEntries.map(i => {
+        const obj = i.toObject ? i.toObject() : i;
+        obj.packCollection = i._packCollection || null;
+        return obj;
+      }),
       totalLoaded: allTabEntries.length,
       totalShown: filteredEntries.length,
       activeTab: this._activeTab,
@@ -116,13 +124,17 @@ export class SWRIFTSCompendiumBrowser extends Application {
     }
 
     resultsWrapper.html(`<div class="compendium-results">${html}</div>`);
+
+    // Bind listeners on the new HTML
     this.activateListeners(this.element);
   }
 
   async _loadAllGameItems() {
-    const packs = game.packs.filter(p =>
-      p.documentName === "Item" &&
-      (p.metadata.packageName.startsWith("swade") || p.metadata.packageName.startsWith("swrifts"))
+    const packs = game.packs.filter(
+      p =>
+        p.documentName === "Item" &&
+        (p.metadata.packageName.startsWith("swade") ||
+          p.metadata.packageName.startsWith("swrifts"))
     );
 
     const allItems = [];
@@ -134,14 +146,22 @@ export class SWRIFTSCompendiumBrowser extends Application {
         const validItems = [];
         for (const item of items) {
           try {
-            if (!item.name || typeof item.name !== "string") throw new Error("Missing or invalid name");
+            if (!item.name || typeof item.name !== "string")
+              throw new Error("Missing or invalid name");
+            item._packCollection = pack.collection;
             validItems.push(item);
           } catch (validationError) {
-            console.warn(`❌ Skipped invalid item in ${pack.metadata.label}:`, item.name || "<unnamed>", validationError);
+            console.warn(
+              `❌ Skipped invalid item in ${pack.metadata.label}:`,
+              item.name || "<unnamed>",
+              validationError
+            );
           }
         }
 
-        console.log(`📦 Loaded ${validItems.length}/${items.length} valid items from ${pack.metadata.packageName}.${pack.metadata.name}`);
+        console.log(
+          `📦 Loaded ${validItems.length}/${items.length} valid items from ${pack.metadata.packageName}.${pack.metadata.name}`
+        );
         allItems.push(...validItems);
       } catch (err) {
         console.warn(`⚠️ Failed to load ${pack.metadata.packageName}.${pack.metadata.name}:`, err);
@@ -173,10 +193,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
 
     switch (tab) {
       case "iconic-frameworks":
-        return (
-          item.type === "ability" &&
-          item.system?.subtype?.toLowerCase?.() === "archetype"
-        );
+        return item.type === "ability" && item.system?.subtype?.toLowerCase?.() === "archetype";
       case "ancestries":
         return type === "ancestry";
       case "special-abilities":
@@ -186,8 +203,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
       case "hindrances":
         return type === "hindrance";
       case "skills":
-        return type === "skill" 
-            || (item.system?.subtype?.toLowerCase?.() === "skill");
+        return type === "skill" || item.system?.subtype?.toLowerCase?.() === "skill";
       case "gear":
         return ["gear", "consumable", "weapon", "armor", "shield"].includes(type);
       default:
@@ -197,7 +213,13 @@ export class SWRIFTSCompendiumBrowser extends Application {
 
   _getAvailableFilters(entries) {
     // Extract unique source names from entries, trimming and filtering out empty strings
-    let sources = [...new Set(entries.map(i => (i.system?.source ?? "Unknown").trim()).filter(Boolean))];
+    let sources = [
+      ...new Set(
+        entries
+          .map(i => (i.system?.source ?? "Unknown").trim())
+          .filter(Boolean)
+      )
+    ];
 
     // Normalize SWADE source names to a single label "SWADE"
     sources = sources.map(src => {
@@ -218,11 +240,13 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   _getAvailableSeverityFilters(entries) {
-    let severities = [...new Set(
-      entries
-        .map(i => (i.system?.severity ?? "").trim())
-        .filter(s => s.length > 0)
-    )];
+    let severities = [
+      ...new Set(
+        entries
+          .map(i => (i.system?.severity ?? "").trim())
+          .filter(s => s.length > 0)
+      )
+    ];
     severities.sort();
     return severities;
   }
@@ -256,11 +280,11 @@ export class SWRIFTSCompendiumBrowser extends Application {
     // Sorting
     if (this._sortDirection !== "unsorted") {
       filtered.sort((a, b) => {
-        const getFieldValue = (item) => {
+        const getFieldValue = item => {
           if (this._sortField === "source") return (item.system?.source ?? "").toLowerCase();
           if (this._sortField === "name") return (item.name ?? "").toLowerCase();
           if (this._sortField === "severity") {
-            const order = { "minor": 1, "major": 2 };
+            const order = { minor: 1, major: 2 };
             return order[(item.system?.severity ?? "").toLowerCase()] || 99;
           }
           return (item[this._sortField] ?? "").toString().toLowerCase();
@@ -278,6 +302,8 @@ export class SWRIFTSCompendiumBrowser extends Application {
   }
 
   activateListeners(html) {
+    super.activateListeners(html);
+
     // Sync tab active classes
     html.find(".type-tab").removeClass("active");
     html.find(`.type-tab[data-type="${this._activeTab}"]`).addClass("active");
@@ -382,17 +408,52 @@ export class SWRIFTSCompendiumBrowser extends Application {
       await this.updateResultsList();
     });
 
-    // Bind row click and dragstart
+    // Double-click event handler for items
+    html.find(".compendium-list-row").off("dblclick").on("dblclick", async event => {
+      event.preventDefault();
+      const li = $(event.currentTarget);
+      const packId = li.data("pack");
+      const entryId = li.data("document-id");
+
+      console.log("Double-click detected on item", { packId, entryId });
+
+      if (!packId || !entryId) {
+        ui.notifications.warn("Missing pack or document ID on item.");
+        return;
+      }
+      const pack = game.packs.get(packId);
+      if (!pack) {
+        ui.notifications.error(`Compendium pack '${packId}' not found.`);
+        return;
+      }
+
+      try {
+        const entry = await pack.getDocument(entryId);
+        if (entry) {
+          entry.sheet.render(true);
+        } else {
+          ui.notifications.warn("Item could not be opened—see console for details.");
+        }
+      } catch (err) {
+        console.error("Failed to get document for double-click:", entryId, err);
+        ui.notifications.warn("Item could not be loaded due to invalid data or missing fields.");
+      }
+    });
+
+    // Drag start binding
     html.find(".compendium-list-row").off("dragstart").on("dragstart", ev => {
       const uuid = ev.currentTarget.dataset.uuid;
       console.log("Dragging item UUID:", uuid);
       const dt = ev.originalEvent.dataTransfer;
 
       dt.setData("text/plain", uuid);
-      dt.setData("text/foundry-item", JSON.stringify({
-        type: "Item",
-        uuid: uuid
-      }));
+      dt.setData(
+        "text/foundry-item",
+        JSON.stringify({
+          type: "Item",
+          uuid: uuid
+        })
+      );
 
       const img = ev.currentTarget.querySelector("img.result-icon");
       if (img) dt.setDragImage(img, 20, 20);
@@ -401,10 +462,14 @@ export class SWRIFTSCompendiumBrowser extends Application {
 
   _getNextSortDirection(current) {
     switch (current) {
-      case "unsorted": return "asc";
-      case "asc": return "desc";
-      case "desc": return "unsorted";
-      default: return "unsorted";
+      case "unsorted":
+        return "asc";
+      case "asc":
+        return "desc";
+      case "desc":
+        return "unsorted";
+      default:
+        return "unsorted";
     }
   }
 
@@ -444,10 +509,7 @@ export class SWRIFTSCompendiumBrowser extends Application {
 
   static debugIconicFrameworks() {
     const matches = this._allItems.filter(item => {
-      return (
-        item.type === "ability" &&
-        item.system?.subtype?.toLowerCase?.() === "archetype"
-      );
+      return item.type === "ability" && item.system?.subtype?.toLowerCase?.() === "archetype";
     });
 
     console.group("🔍 Iconic Framework Candidates");

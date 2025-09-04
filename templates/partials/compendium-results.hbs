@@ -4,7 +4,12 @@
 
   <ul class="compendium-list-results">
     {{#each entries}}
-      <li class="compendium-list-row {{#if @odd}}striped{{/if}}" data-id="{{_id}}" data-uuid="{{uuid}}" draggable="true">
+      <li class="directory-item compendium-list-row {{#if @odd}}striped{{/if}}"
+        data-pack="{{packCollection}}"
+        data-document-id="{{_id}}"
+        data-uuid="{{uuid}}" 
+        draggable="true"
+      >
         <img class="result-icon" src="{{img}}" alt="{{name}}" />
         <span class="result-name">{{name}}</span>
 
