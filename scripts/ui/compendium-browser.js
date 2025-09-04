@@ -103,6 +103,12 @@ export class SWRIFTSCompendiumBrowser extends Application {
       entries: filteredEntries.map(i => {
         const obj = i.toObject ? i.toObject() : i;
         obj.packCollection = i._packCollection || null;
+        if (!obj.uuid && typeof i.uuid === "string" && i.uuid.length > 0) {
+          obj.uuid = i.uuid;
+        }
+        else if (!obj.uuid && i.document?.uuid) {
+          obj.uuid = i.document.uuid;
+        }
         return obj;
       }),
       totalLoaded: allTabEntries.length,
@@ -443,18 +449,24 @@ export class SWRIFTSCompendiumBrowser extends Application {
     // Drag start binding
     html.find(".compendium-list-row").off("dragstart").on("dragstart", ev => {
       const uuid = ev.currentTarget.dataset.uuid;
+      if (!uuid) {
+        console.warn("Drag event missing UUID on element", ev.currentTarget);
+        return;
+      }
       console.log("Dragging item UUID:", uuid);
-      const dt = ev.originalEvent.dataTransfer;
 
+      const originalEvent = ev.originalEvent || ev;
+      const dt = originalEvent.dataTransfer;
+
+      // Set data types Foundry expects for item drag
       dt.setData("text/plain", uuid);
-      dt.setData(
-        "text/foundry-item",
-        JSON.stringify({
-          type: "Item",
-          uuid: uuid
-        })
-      );
+      dt.setData("text/foundry-item", JSON.stringify({
+        type: "Item",
+        uuid: uuid
+      }));
+      dt.setData("application/x-fid", uuid);
 
+      // Set drag image with offset
       const img = ev.currentTarget.querySelector("img.result-icon");
       if (img) dt.setDragImage(img, 20, 20);
     });

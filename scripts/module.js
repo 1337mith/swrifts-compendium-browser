@@ -58,11 +58,9 @@ Hooks.once("ready", async () => {
 });
 
 Hooks.on("renderActorSheet", (sheet, html, data) => {
-  // Listen to native drop event on the sheet element
-  html.addEventListener("drop", async event => {
+  html[0].addEventListener("drop", async event => {
     event.preventDefault();
 
-    // Try to get Foundry’s structured drag data first
     let dropData = null;
     try {
       const raw = event.dataTransfer.getData("text/foundry-item");
@@ -71,7 +69,6 @@ Hooks.on("renderActorSheet", (sheet, html, data) => {
       console.warn("Failed to parse text/foundry-item data:", err);
     }
 
-    // Fallback to plain text UUID if structured data missing
     if (!dropData) {
       const raw = event.dataTransfer.getData("text/plain");
       if (raw) dropData = { type: "Item", uuid: raw };
@@ -80,14 +77,21 @@ Hooks.on("renderActorSheet", (sheet, html, data) => {
     if (dropData && dropData.type === "Item" && dropData.uuid) {
       console.log("Detected drop of Item with UUID:", dropData.uuid);
 
-      const item = await fromUuid(dropData.uuid);
-      if (!item) {
-        return console.error("Could not find item document from UUID", dropData.uuid);
-      }
+      try {
+        const item = await fromUuid(dropData.uuid);
+        if (!item) {
+          console.error("Could not find item document from UUID", dropData.uuid);
+          return;
+        }
 
-      // Add the item to the actor
-      await sheet.actor.createEmbeddedDocuments("Item", [item.toObject()]);
-      console.log("Item added to actor from drop (manual).");
+        await sheet.actor.createEmbeddedDocuments("Item", [item.toObject()]);
+        console.log("Item added to actor from drop.");
+
+        // Refresh sheet UI to reflect added items
+        sheet.render(false);
+      } catch (e) {
+        console.error("Error adding item to actor:", e);
+      }
     }
   });
 });
